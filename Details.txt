@@ -1,0 +1,3 @@
+Hello guys this is our CodeRed hackathon 
+
+1. we have so far just done so Database work , connections and website 
