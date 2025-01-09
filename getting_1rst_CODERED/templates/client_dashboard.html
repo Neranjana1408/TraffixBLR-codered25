@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .center-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1055;
+            width: 300px;
+        }
+        .toast-success {
+            background-color: #28a745; /* Green for success */
+            color: white;
+        }
+        .toast-warning {
+            background-color: #ffc107; /* Orange for warning */
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Hackathon Project</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    {% if not session.get('username') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signup">Signup</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <h1 class="text-center">Welcome {{ username }}</h1>
+        <a href="/logout" class="btn btn-danger mb-3">Logout</a>
+        <h2>Submit Your Details</h2>
+
+        <!-- Form -->
+        <form action="/submit" method="POST">
+            <div class="mb-3">
+                <label for="vehicle_number" class="form-label">Vehicle Number</label>
+                <input type="text" class="form-control" id="vehicle_number" name="vehicle_number" required>
+            </div>
+            <div class="mb-3">
+                <label for="pan" class="form-label">PAN</label>
+                <input type="text" class="form-control" id="pan" name="pan" required>
+            </div>
+            <div class="mb-3">
+                <label for="aadhar" class="form-label">Aadhar</label>
+                <input type="text" class="form-control" id="aadhar" name="aadhar" required>
+            </div>
+            <div class="mb-3">
+                <label for="license" class="form-label">Driver's License</label>
+                <input type="text" class="form-control" id="license" name="license" required>
+            </div>
+            <div class="mb-3">
+                <label for="vehicle_type" class="form-label">Vehicle Type</label>
+                <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                    <option value="Civilian" selected>Civilian</option>
+                    <option value="Ambulance">Ambulance</option>
+                    <option value="Police">Police</option>
+                    <option value="Firetruck">Firetruck</option>
+                    <option value="Army">Army</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-notification" class="toast center-toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toast-title">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toast-message"></div>
+    </div>
+
+    <!-- Bootstrap and JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle success or already registered flags
+        const isSuccess = {{ success | default(false) | tojson }};
+        const isAlreadyRegistered = {{ already_registered | default(false) | tojson }};
+        const toastElement = document.getElementById('toast-notification');
+        const toastTitle = document.getElementById('toast-title');
+        const toastMessage = document.getElementById('toast-message');
+
+        if (isSuccess) {
+            // Success style
+            toastElement.classList.add('toast-success');
+            toastTitle.textContent = 'Success';
+            toastMessage.textContent = 'Thank you for submitting 😊';
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        } else if (isAlreadyRegistered) {
+            // Warning style
+            toastElement.classList.add('toast-warning');
+            toastTitle.textContent = 'Warning';
+            toastMessage.textContent = 'Vehicle already registered! 🚨 Please check your details.';
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+    </script>
+</body>
+</html>

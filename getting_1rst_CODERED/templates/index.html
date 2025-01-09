@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home TraffixBLR</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/" style="font-family: monospace;">TraffixBLR</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signup">Signup</a>
+                    </li>
+                        <a class="nav-link" href="/client">Get Product</a>
+                    </li>
+                    {% if session['username'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="container text-center my-5">
+        <h1 class="display-4">Welcome to <b>TraffixBLR</b>😁</h1>
+        <p class="lead">Pioneering real-time vehicle communication and tracking with advanced RTO analytics for a smarter, connected future.</p>
+        <a href="/project_dets" class="btn btn-primary btn-lg">View Details</a>
+    </div>
+
+    <!-- About Us Section -->
+    <div class="container my-5">
+        <h2 class="text-center mb-4">About Us</h2>
+        <div class="row text-center">
+            <div class="col-md-3">
+                <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Team Member">
+                <h5>Team Member 1</h5>
+                <p>Developer</p>
+            </div>
+            <div class="col-md-3">
+                <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Team Member">
+                <h5>Team Member 2</h5>
+                <p>Developer</p>
+            </div>
+            <div class="col-md-3">
+                <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Team Member">
+                <h5>Team Member 3</h5>
+                <p>Designer</p>
+            </div>
+            <div class="col-md-3">
+                <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Team Member">
+                <h5>Team Member 4</h5>
+                <p>Project Manager</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-3">
+        <p>-- In Progress --</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
