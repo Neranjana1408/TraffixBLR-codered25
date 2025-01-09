@@ -1,50 +1,49 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
+// nRF24L01 Setup
 RF24 radio(9, 10); // CE, CSN
 const byte address[6] = "00001";
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// Structure to receive GPS data
+struct Location {
+  double latitude;   // Latitude received from the transmitter
+  double longitude;  // Longitude received from the transmitter
+};
 
 void setup() {
+  // Initialize Serial Monitor
   Serial.begin(9600);
 
-  radio.begin();
-  radio.openReadingPipe(0, address);
+  // nRF24L01 Initialization
+  if (!radio.begin()) {
+    Serial.println("nRF24L01 not detected! Check connections.");
+    while (1); // Halt
+  }
+
+  radio.openReadingPipe(1, address);
   radio.setChannel(108);
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setPALevel(RF24_PA_HIGH);
   radio.setAutoAck(false); // Disable Auto-ACK
   radio.startListening();
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;);
-  }
-  display.display();
-  delay(2000);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+  Serial.println("Receiver Ready");
 }
 
 void loop() {
+  // Check if there is data available from the transmitter
   if (radio.available()) {
-    char text[32] = "";
-    radio.read(&text, sizeof(text));
+    Location receivedData;
 
-    Serial.print("Received: ");
-    Serial.println(text);
+    // Read the received GPS data
+    radio.read(&receivedData, sizeof(receivedData));
 
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.print("Received:");
-    display.setCursor(0, 16);
-    display.println(text);
-    display.display();
+    // Print the received data to the Serial Monitor
+    Serial.println("Received GPS data:");
+    Serial.print("Latitude: ");
+    Serial.println(receivedData.latitude, 6); // Print latitude with 6 decimal places
+    Serial.print("Longitude: ");
+    Serial.println(receivedData.longitude, 6); // Print longitude with 6 decimal places
   }
 }
