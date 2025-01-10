@@ -29,8 +29,14 @@ float localLatitude = 0.0, localLongitude = 0.0, localSpeed = 0.0;
 bool receivedNewData = false; // Flag to indicate new data received
 
 // LED Pins
-const int msgReceivedLed = 5;
-const int dangerLed = 6;
+const int msgReceivedLed = 5; // Change as needed
+const int dangerLed = 6;      // Change as needed
+
+// Ultrasonic Sensor Pins
+const int trigLeft = A0;       // Left sensor Trig connected to A0
+const int echoLeft = A1;       // Left sensor Echo connected to A1
+const int trigRight = 7;       // Right sensor Trig connected to 7
+const int echoRight = 2;       // Right sensor Echo connected to 2
 
 // Function to calculate distance using the Haversine formula
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -45,6 +51,19 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
              sin(deltaLon / 2) * sin(deltaLon / 2);
   double c = 2 * atan2(sqrt(a), sqrt(1 - a));
   return R * c * 1000; // Distance in meters
+}
+
+// Function to get the distance from an ultrasonic sensor
+float getUltrasonicDistance(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  float distance = (duration * 0.0343) / 2; // Convert to cm
+  return (distance > 0 && distance < 400) ? distance : -1; // Return -1 for invalid distances
 }
 
 void setup() {
@@ -66,6 +85,12 @@ void setup() {
   pinMode(msgReceivedLed, OUTPUT);
   pinMode(dangerLed, OUTPUT);
 
+  // Ultrasonic Sensor Pins Setup
+  pinMode(trigLeft, OUTPUT);
+  pinMode(echoLeft, INPUT);
+  pinMode(trigRight, OUTPUT);
+  pinMode(echoRight, INPUT);
+
   // Ensure LEDs are off initially
   digitalWrite(msgReceivedLed, LOW);
   digitalWrite(dangerLed, LOW);
@@ -82,21 +107,44 @@ void loop() {
     // Light up the message received LED
     digitalWrite(msgReceivedLed, HIGH);
 
-    Serial.print("##################Received Latitude: ");
+    Serial.print("##############################Received Latitude: ");
     Serial.println(receivedData.latitude, 6);
-    Serial.print("##################Received Longitude: ");
+    Serial.print("##############################Received Longitude: ");
     Serial.println(receivedData.longitude, 6);
-    Serial.print("##################Received Speed: ");
+    Serial.print("##############################Received Speed: ");
     Serial.print(receivedData.speed, 2);
     Serial.println(" m/s");
 
     // Calculate the distance and effective distance
-    double distance = calculateDistance(localLatitude, localLongitude, receivedData.latitude, receivedData.longitude);
+    double gpsDistance = calculateDistance(localLatitude, localLongitude, receivedData.latitude, receivedData.longitude);
 
+    // Get distances from ultrasonic sensors
+    float leftDistance = getUltrasonicDistance(trigLeft, echoLeft);
+    delay(50); // Add delay to prevent interference
+    float rightDistance = getUltrasonicDistance(trigRight, echoRight);
+
+    Serial.print("********Left Ultrasonic Distance: ");
+    Serial.println(leftDistance != -1 ? String(leftDistance) + " cm" : "Invalid");
+    Serial.print("========Right Ultrasonic Distance: ");
+    Serial.println(rightDistance != -1 ? String(rightDistance) + " cm" : "Invalid");
+    double brakingDistance = pow(localSpeed , 2) / (2 * 0.6 * 9.8);
     // Check if danger condition is met
-    if (distance < 50.0) { // Example danger threshold
-      Serial.println("#######DANGER!!!!#######");
-      digitalWrite(dangerLed, HIGH); // Light up the danger LED
+    if (gpsDistance < brakingDistance) { // Example danger threshold
+      Serial.println("^^^^^^^^^^^DANGER DETECTED!!!!^^^^^^^^");
+      digitalWrite(dangerLed, HIGH); 
+      // Choose direction based on ultrasonic distances
+      if (leftDistance == -1 && rightDistance == -1) {
+        Serial.println("No valid ultrasonic data. Staying in place.");
+      } else 
+      if (leftDistance > rightDistance) {
+        Serial.println("<------------Turning LEFT to avoid danger.------------>");
+        delay(2000);
+      } else {
+        Serial.println("<------------Turning RIGHT to avoid danger.------------>");
+        delay(2000);
+      }
+
+     
     } else {
       digitalWrite(dangerLed, LOW); // Turn off danger LED
     }
@@ -106,7 +154,7 @@ void loop() {
     const char ack[] = "Ack: Received";
     bool success = radio.write(&ack, sizeof(ack)); // Send acknowledgment
     if (success) {
-      Serial.println("Default Ack sent successfully.");
+      Serial.println("‼!!!!!!!!!!Default Ack sent successfully.");
     } else {
       Serial.println("Failed to send Default Ack.");
     }
@@ -116,6 +164,8 @@ void loop() {
     delay(100); // Keep the LED on briefly
     digitalWrite(msgReceivedLed, LOW); // Turn off message received LED
   }
+  digitalWrite(msgReceivedLed, LOW);
+  delay(100);
 
   // Check for new GPS data asynchronously
   while (gpsSerial.available() > 0) {
@@ -137,7 +187,6 @@ void loop() {
 
   // If new data has been received, calculate the distance
   if (receivedNewData) {
-    // Reset the flag
-    receivedNewData = false;
+    receivedNewData = false; // Reset the flag
   }
 }
