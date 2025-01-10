@@ -5,16 +5,14 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'hackathon_secret_key'
 
-# CSV file for storing user data
 USER_DATA_FILE = 'users.csv'
 FORM_DATA_FILE = 'data.csv'
 
-# Admin credentials
+
 ADMIN_USERNAME = 'SSSS'
 ADMIN_PASSWORD = 'SSSS'
 
 
-# Utility function to check if user exists
 def user_exists(username):
     try:
         with open(USER_DATA_FILE, 'r') as csvfile:
@@ -28,11 +26,9 @@ def user_exists(username):
 
 
 def validate_user(username, password):
-    # Check for admin credentials
+
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
         return 'admin'
-
-    # Check for client credentials
     try:
         with open(USER_DATA_FILE, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -50,22 +46,19 @@ def index():
     return render_template('index.html', username=session.get('username'))
 
 
-# Route: Signup
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        # Check if the user already exists
         if user_exists(username):
             flash('Username already exists. Please log in.', 'error')
             return redirect(url_for('login'))
 
-        # Add the new user to the CSV file
         with open(USER_DATA_FILE, 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=['username', 'password'])
-            if csvfile.tell() == 0:  # Write header if file is empty
+            if csvfile.tell() == 0:  
                 writer.writeheader()
             writer.writerow({'username': username, 'password': password})
 
@@ -81,13 +74,11 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        # Validate user and determine role
         role = validate_user(username, password)
         if role:
             session['username'] = username
             session['role'] = role
 
-            # Redirect based on role
             if role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -99,7 +90,6 @@ def login():
 
 
 
-# Route: Logout
 @app.route('/logout')
 def logout():
     session.clear()
