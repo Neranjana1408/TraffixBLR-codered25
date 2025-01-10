@@ -4,39 +4,34 @@
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
 
-// GPS Setup
-static const int RXPin = 3, TXPin = 4; // Connect GPS TX → Arduino Pin 3, GPS RX → Arduino Pin 4
-static const uint32_t GPSBaud = 9600; // GPS Baud rate
-SoftwareSerial gpsSerial(RXPin, TXPin); // GPS serial communication
-TinyGPSPlus gps; // GPS object
+static const int RXPin = 3, TXPin = 4; 
+static const uint32_t GPSBaud = 9600; 
+SoftwareSerial gpsSerial(RXPin, TXPin); 
+TinyGPSPlus gps; 
 
-// nRF24L01 Setup
-RF24 radio(9, 10); // CE, CSN
+RF24 radio(9, 10); 
 const byte address[6] = "00001";
 
-// Structure to send GPS data
 struct Location {
   float latitude;
   float longitude;
 };
 
 void setup() {
-  // Serial Monitor
+
   Serial.begin(9600);
 
-  // GPS Initialization
   gpsSerial.begin(GPSBaud);
 
-  // nRF24L01 Initialization
   if (!radio.begin()) {
     Serial.println("nRF24L01 not detected! Check connections.");
-    while (1); // Halt
+    while (1);
   }
 
   radio.openWritingPipe(address);
   radio.setChannel(108);
   radio.setPALevel(RF24_PA_HIGH);
-  radio.setAutoAck(false); // Disable Auto-ACK
+  radio.setAutoAck(false);
   radio.stopListening();
 
   Serial.println("Transmitter Ready");
@@ -45,15 +40,13 @@ void setup() {
 void loop() {
   Location dataToSend;
 
-  // Wait for valid GPS data
   while (gpsSerial.available() > 0) {
     gps.encode(gpsSerial.read());
 
-    if (gps.location.isUpdated()) { // Check for updated location data
-      dataToSend.latitude = gps.location.lat();   // Get latitude
-      dataToSend.longitude = gps.location.lng(); // Get longitude
+    if (gps.location.isUpdated()) { 
+      dataToSend.latitude = gps.location.lat();  
+      dataToSend.longitude = gps.location.lng();
 
-      // Transmit GPS coordinates
       bool success = radio.write(&dataToSend, sizeof(dataToSend));
 
       if (success) {
