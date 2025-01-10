@@ -2,9 +2,9 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Keypad.h>
-#include <TimeLib.h> // For time management
-#include <TinyGPS++.h> // For GPS module
-#include <SoftwareSerial.h> // For software serial communication
+#include <TimeLib.h> 
+#include <TinyGPS++.h> 
+#include <SoftwareSerial.h> 
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
@@ -12,7 +12,7 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// Keypad setup
+
 const byte ROWS = 4;
 const byte COLS = 4;
 char keys[ROWS][COLS] = {
@@ -25,17 +25,17 @@ byte rowPins[ROWS] = {2, 3, 4, 5};
 byte colPins[COLS] = {6, 7, 8, 9};
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-// GPS setup
-TinyGPSPlus gps;
-SoftwareSerial gpsSerial(10, 11); // RX = 10, TX = 11 (connect GPS TX to pin 10, GPS RX to pin 11)
 
-// Hardcoded vehicle and tower location
+TinyGPSPlus gps;
+SoftwareSerial gpsSerial(10, 11); 
+
+
 float vehicleLatitude = 37.7745;  // Initially within 500m
 float vehicleLongitude = -122.4190;
 float towerLatitude = 37.7750;  
 float towerLongitude = -122.4195;
 
-// Vehicle data
+
 struct VehicleData {
   String vehicleDetails;
   String entryTime;
@@ -50,11 +50,11 @@ VehicleData vehicle = {
   ""              // Exit time (initially empty)
 };
 
-// Tracking variables
+
 bool isVehicleInRadius = false;
 unsigned long startTime = 0;
 
-// Function declarations
+
 bool isWithinRadius();
 float calculateDistance(float lat1, float lon1, float lat2, float lon2);
 void logEntry();
@@ -68,7 +68,7 @@ void setup() {
   Serial.begin(9600);
   gpsSerial.begin(9600); // Initialize GPS UART
 
-  // Initialize OLED
+
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println("SSD1306 allocation failed");
     for (;;);
@@ -82,13 +82,12 @@ void setup() {
   delay(2000);
   display.clearDisplay();
 
-  // Print CSV Header
+
   Serial.println("Vehicle Details,Entry Time,Messages Sent,Exit Time");
 
-  // Sync time with GPS
+
   setSyncProvider(getGPSTime); // Use custom function to provide GPS time
 
-  // Check initial radius
   if (isWithinRadius()) {
     isVehicleInRadius = true;
     logEntry();
@@ -98,12 +97,12 @@ void setup() {
 }
 
 void loop() {
-  // Process GPS data
+
   while (gpsSerial.available() > 0) {
     gps.encode(gpsSerial.read());
   }
 
-  // Simulate movement after 1 minute
+
   if (millis() - startTime >= 60000) {
     vehicleLatitude = 37.7690;  // Move out of range
     vehicleLongitude = -122.4194;
@@ -115,7 +114,7 @@ void loop() {
       logEntry();
     }
 
-    // Handle keypad input
+
     char key = keypad.getKey();
     if (key) {
       handleKeyPress(key);
@@ -128,7 +127,7 @@ void loop() {
   }
 }
 
-// Function definitions
+
 bool isWithinRadius() {
   float distance = calculateDistance(vehicleLatitude, vehicleLongitude, towerLatitude, towerLongitude);
   return distance <= 500;
@@ -152,14 +151,13 @@ void logEntry() {
   vehicle.messagesSent = "None"; // Reset messages
   vehicle.exitTime = "N/A"; // Reset exit time
 
-  // Print entry log in CSV format
+
   printCSV();
 }
 
 void logExit() {
   vehicle.exitTime = getCurrentTime();
 
-  // Print exit log in CSV format
   printCSV();
 }
 
@@ -170,17 +168,17 @@ void handleKeyPress(char key) {
   else if (key == '6') message = "Traffic";
   else return;
 
-  // Set the current message if not set or append to the existing one
+
   if (vehicle.messagesSent == "None" || vehicle.messagesSent == "") {
     vehicle.messagesSent = message;
   } else {
-    vehicle.messagesSent = message; // Only keep the current message
+    vehicle.messagesSent = message; 
   }
 
-  // Print updated CSV with only the current message
+
   printCSV();
 
-  // Display message on OLED
+  
   display.clearDisplay();
   display.setCursor(0, 0);
   display.print("Message Sent:");
@@ -200,15 +198,15 @@ void printCSV() {
   Serial.print(",");
   Serial.print(vehicle.entryTime);
   Serial.print(",");
-  Serial.print(vehicle.messagesSent); // Print the current message only
+  Serial.print(vehicle.messagesSent); 
   Serial.print(",");
   Serial.println(vehicle.exitTime);
 }
 
-// GPS time extraction function
+
 unsigned long getGPSTime() {
   if (gps.time.isUpdated()) {
-    return gps.time.value(); // Return the GPS time as an unsigned long value (seconds)
+    return gps.time.value();
   }
-  return 0; // If no valid GPS time is available, return 0
+  return 0; 
 }
