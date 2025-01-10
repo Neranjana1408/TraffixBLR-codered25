@@ -120,7 +120,7 @@ void loop() {
 
 
 float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
-  const float R = 6371000; // Earth radius in meters
+  const float R = 6371000; 
   float phi1 = lat1 * (M_PI / 180.0);
   float phi2 = lat2 * (M_PI / 180.0);
   float deltaPhi = (lat2 - lat1) * (M_PI / 180.0);
@@ -135,13 +135,12 @@ float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
 
 void logEntry() {
   vehicle.entryTime = getCurrentTime();
-  vehicle.exitTime = "N/A"; // Reset exit time
-  vehicle.messagesSent = "None"; // Reset messages
+  vehicle.exitTime = "N/A"; 
+  vehicle.messagesSent = "None"; 
 
   printCSV();
 }
 
-// Log exit event
 void logExit() {
   vehicle.exitTime = getCurrentTime();
 
