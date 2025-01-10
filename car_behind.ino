@@ -14,6 +14,9 @@ TinyGPSPlus gps; // GPS object
 RF24 radio(9, 10); // CE, CSN
 const byte address[6] = "00001";
 
+// LED Setup
+const int ledPin = 9; // LED pin on pin 9
+
 // Structure to send GPS data
 struct Location {
   double latitude;   // Latitude with high precision
@@ -27,6 +30,9 @@ void setup() {
 
   // GPS Initialization
   gpsSerial.begin(GPSBaud);
+
+  // LED Initialization
+  pinMode(ledPin, OUTPUT); // Set LED pin as output
 
   // nRF24L01 Initialization
   if (!radio.begin()) {
@@ -53,7 +59,7 @@ void loop() {
     if (gps.location.isUpdated()) { // Check for updated location data
       dataToSend.latitude = gps.location.lat();   // Get latitude
       dataToSend.longitude = gps.location.lng(); // Get longitude
-      dataToSend.speed = int(gps.speed.kmph() * 0.277778*0.6 ); // Convert speed to cm/s
+      dataToSend.speed = int(gps.speed.kmph() * 0.277778 * 100 ); // Convert speed to cm/s
 
       // Transmit GPS coordinates
       bool success = radio.write(&dataToSend, sizeof(dataToSend));
@@ -66,9 +72,33 @@ void loop() {
         Serial.println(dataToSend.longitude, 6); // Print longitude with 6 decimal places
         Serial.print("Speed (cm/s): ");
         Serial.println(dataToSend.speed, 2); // Print speed with 2 decimal places
+
+        // Turn on LED to indicate successful transmission
+        digitalWrite(ledPin, HIGH); // LED on
+        delay(500); // LED stays on for 0.5 seconds
+        digitalWrite(ledPin, LOW);  // LED off
       } else {
         Serial.println("Message failed to send.");
       }
+
+      // Wait briefly to allow the receiver to send acknowledgment
+      delay(10);
+
+      // Check for acknowledgment
+      radio.startListening(); // Switch to listening mode for acknowledgment
+      delay(10);
+
+      if (radio.available()) {
+        char ack[32] = ""; // Buffer for acknowledgment message
+        radio.read(&ack, sizeof(ack)); // Read the acknowledgment message
+        Serial.print("Received ACK: ");
+        Serial.println(ack);
+      } else {
+        Serial.println("No ACK received.");
+      }
+
+      radio.stopListening(); // Switch back to transmitting mode
+
       delay(1000); // Wait 1 second before sending again
     }
   }
