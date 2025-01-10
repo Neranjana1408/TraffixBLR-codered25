@@ -3,41 +3,37 @@
 #include <RF24.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
-#include <math.h> // Required for mathematical functions
+#include <math.h> 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-// nRF24L01 Setup
-RF24 radio(9, 10); // CE, CSN
-const byte address[6] = "00001";     // Address for incoming
-const byte ackAddress[6] = "00002";  // Address for outgoing acknowledgment
+RF24 radio(9, 10);
+const byte address[6] = "00001";     
+const byte ackAddress[6] = "00002";  
 
-// OLED setup for 128x32
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// GPS Setup
-static const int RXPin = 3, TXPin = 4; // GPS RX → Arduino Pin 3, GPS TX → Arduino Pin 4
-static const uint32_t GPSBaud = 9600; // GPS module baud rate
-SoftwareSerial gpsSerial(RXPin, TXPin); // Create SoftwareSerial for GPS
-TinyGPSPlus gps; // TinyGPS++ object for parsing GPS data
 
-// Structure to receive GPS data from nRF24L01
+static const int RXPin = 3, TXPin = 4; 
+static const uint32_t GPSBaud = 9600; 
+SoftwareSerial gpsSerial(RXPin, TXPin); 
+TinyGPSPlus gps; 
+
+
 struct Location {
-  float latitude;   // Latitude
-  float longitude;  // Longitude
-  float speed;      // Speed in cm/s
+  float latitude;   
+  float longitude;  
+  float speed;    
 };
 
-// Variables to store received and local GPS coordinates
 Location receivedData;
 float localLatitude = 0.0, localLongitude = 0.0, localSpeed = 0.0;
-bool receivedNewData = false; // Flag to indicate new data received
+bool receivedNewData = false; 
 
-// Function to calculate distance using the Haversine formula
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  const double R = 6371.0; // Earth's radius in kilometers
+  const double R = 6371.0; 
   double latRad1 = radians(lat1);
   double latRad2 = radians(lat2);
   double deltaLat = radians(lat2 - lat1);
@@ -47,35 +43,30 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
              cos(latRad1) * cos(latRad2) *
              sin(deltaLon / 2) * sin(deltaLon / 2);
   double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-  return R * c * 1000; // Distance in meters
+  return R * c * 1000; 
 }
 
-// Function to calculate the magnitude of the least possible distance with ±5m error margin
 double calculateEffectiveDistance(double actualDistance) {
-  double lowerBound = actualDistance - 10.0; // Lower bound of the range
-  double upperBound = actualDistance + 10.0; // Upper bound of the range
+  double lowerBound = actualDistance - 10.0; 
+  double upperBound = actualDistance + 10.0;
 
-  // Calculate magnitudes of the bounds
   double magnitudeLower = abs(lowerBound);
   double magnitudeUpper = abs(upperBound);
 
-  // Return the smallest magnitude
   return (magnitudeLower < magnitudeUpper) ? magnitudeLower : magnitudeUpper;
 }
 
 void setup() {
   Serial.begin(9600);
 
-  // Initialize radio
   radio.begin();
-  radio.openReadingPipe(0, address);    // Listen for incoming data
-  radio.openWritingPipe(ackAddress);   // Send acknowledgment to the transmitter
+  radio.openReadingPipe(0, address);    
+  radio.openWritingPipe(ackAddress);   
   radio.setChannel(108);
   radio.setPALevel(RF24_PA_LOW);
-  radio.setAutoAck(false); // Disable Auto-ACK
+  radio.setAutoAck(false); 
   radio.startListening();
 
-  // Initialize OLED display
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;);
@@ -86,16 +77,16 @@ void setup() {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
-  // GPS Initialization
+
   gpsSerial.begin(GPSBaud);
   Serial.println("Receiver ready.");
 }
 
 void loop() {
-  // Check for new data from nRF24L01 asynchronously
+
   if (radio.available()) {
     radio.read(&receivedData, sizeof(receivedData));
-    receivedNewData = true; // Set the flag for new data
+    receivedNewData = true; 
 
     Serial.print("##################Received Latitude: ");
     Serial.println(receivedData.latitude, 6);
