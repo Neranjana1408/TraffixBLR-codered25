@@ -4,26 +4,23 @@
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
 
-// nRF24L01 Setup
-RF24 radio(9, 10); // CE, CSN
+
+RF24 radio(9, 10);
 const byte address[6] = "00001";
 
-// GPS Setup
-static const int RXPin = 3, TXPin = 4; // GPS RX → Arduino Pin 3, GPS TX → Arduino Pin 4
-static const uint32_t GPSBaud = 9600; // GPS module baud rate
-SoftwareSerial gpsSerial(RXPin, TXPin); // Create SoftwareSerial for GPS
-TinyGPSPlus gps; // TinyGPS++ object for parsing GPS data
+static const int RXPin = 3, TXPin = 4; 
+static const uint32_t GPSBaud = 9600; 
+SoftwareSerial gpsSerial(RXPin, TXPin); 
+TinyGPSPlus gps; 
 
-// Structure to receive GPS data from nRF24L01
 struct Location {
-  float latitude;   // Use 'float' to save memory
-  float longitude;  // Use 'float' to save memory
+  float latitude;  
+  float longitude;  
 };
 
 void setup() {
   Serial.begin(9600);
 
-  // nRF24L01 Initialization
   if (!radio.begin()) {
     Serial.println("nRF24L01 not detected! Check connections.");
     while (1);
@@ -32,16 +29,16 @@ void setup() {
   radio.openReadingPipe(0, address);
   radio.setChannel(108);
   radio.setPALevel(RF24_PA_LOW);
-  radio.setAutoAck(false); // Disable Auto-ACK
+  radio.setAutoAck(false);
   radio.startListening();
 
-  // GPS Initialization
+
   gpsSerial.begin(GPSBaud);
   Serial.println("Receiver ready.");
 }
 
 void loop() {
-  // Receive GPS data from nRF24L01
+
   if (radio.available()) {
     Location receivedData;
     radio.read(&receivedData, sizeof(receivedData));
@@ -52,7 +49,6 @@ void loop() {
     Serial.println(receivedData.longitude, 6);
   }
 
-  // Read GPS data from the local GPS module
   while (gpsSerial.available() > 0) {
     gps.encode(gpsSerial.read());
     if (gps.location.isUpdated()) {
