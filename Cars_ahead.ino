@@ -3,37 +3,38 @@
 #include <RF24.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
-#include <math.h> 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <math.h> // Required for mathematical functions
 
-RF24 radio(9, 10);
-const byte address[6] = "00001";     
-const byte ackAddress[6] = "00002";  
+// nRF24L01 Setup
+RF24 radio(9, 10); // CE, CSN
+const byte address[6] = "00001";     // Address for incoming
+const byte ackAddress[6] = "00002";  // Address for outgoing acknowledgment
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// GPS Setup
+static const int RXPin = 3, TXPin = 4; // GPS RX → Arduino Pin 3, GPS TX → Arduino Pin 4
+static const uint32_t GPSBaud = 9600; // GPS module baud rate
+SoftwareSerial gpsSerial(RXPin, TXPin); // Create SoftwareSerial for GPS
+TinyGPSPlus gps; // TinyGPS++ object for parsing GPS data
 
-
-static const int RXPin = 3, TXPin = 4; 
-static const uint32_t GPSBaud = 9600; 
-SoftwareSerial gpsSerial(RXPin, TXPin); 
-TinyGPSPlus gps; 
-
-
+// Structure to receive GPS data from nRF24L01
 struct Location {
-  float latitude;   
-  float longitude;  
-  float speed;    
+  float latitude;   // Latitude
+  float longitude;  // Longitude
+  float speed;      // Speed in cm/s
 };
 
+// Variables to store received and local GPS coordinates
 Location receivedData;
 float localLatitude = 0.0, localLongitude = 0.0, localSpeed = 0.0;
-bool receivedNewData = false; 
+bool receivedNewData = false; // Flag to indicate new data received
 
+// LED Pins
+const int msgReceivedLed = 5;
+const int dangerLed = 6;
+
+// Function to calculate distance using the Haversine formula
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  const double R = 6371.0; 
+  const double R = 6371.0; // Earth's radius in kilometers
   double latRad1 = radians(lat1);
   double latRad2 = radians(lat2);
   double deltaLat = radians(lat2 - lat1);
@@ -43,50 +44,43 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
              cos(latRad1) * cos(latRad2) *
              sin(deltaLon / 2) * sin(deltaLon / 2);
   double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-  return R * c * 1000; 
-}
-
-double calculateEffectiveDistance(double actualDistance) {
-  double lowerBound = actualDistance - 10.0; 
-  double upperBound = actualDistance + 10.0;
-
-  double magnitudeLower = abs(lowerBound);
-  double magnitudeUpper = abs(upperBound);
-
-  return (magnitudeLower < magnitudeUpper) ? magnitudeLower : magnitudeUpper;
+  return R * c * 1000; // Distance in meters
 }
 
 void setup() {
   Serial.begin(9600);
 
+  // Initialize radio
   radio.begin();
-  radio.openReadingPipe(0, address);    
-  radio.openWritingPipe(ackAddress);   
+  radio.openReadingPipe(0, address);    // Listen for incoming data
+  radio.openWritingPipe(ackAddress);   // Send acknowledgment to the transmitter
   radio.setChannel(108);
   radio.setPALevel(RF24_PA_LOW);
-  radio.setAutoAck(false); 
+  radio.setAutoAck(false); // Disable Auto-ACK
   radio.startListening();
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;);
-  }
-  display.display();
-  delay(2000);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-
-
+  // GPS Initialization
   gpsSerial.begin(GPSBaud);
+
+  // LED Pins Setup
+  pinMode(msgReceivedLed, OUTPUT);
+  pinMode(dangerLed, OUTPUT);
+
+  // Ensure LEDs are off initially
+  digitalWrite(msgReceivedLed, LOW);
+  digitalWrite(dangerLed, LOW);
+
   Serial.println("Receiver ready.");
 }
 
 void loop() {
-
+  // Check for new data from nRF24L01 asynchronously
   if (radio.available()) {
     radio.read(&receivedData, sizeof(receivedData));
-    receivedNewData = true; 
+    receivedNewData = true; // Set the flag for new data
+
+    // Light up the message received LED
+    digitalWrite(msgReceivedLed, HIGH);
 
     Serial.print("##################Received Latitude: ");
     Serial.println(receivedData.latitude, 6);
@@ -96,28 +90,31 @@ void loop() {
     Serial.print(receivedData.speed, 2);
     Serial.println(" m/s");
 
-    // Display received data on OLED
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.print("Received:");
-    display.setCursor(0, 16);
-    display.print("Lat: ");
-    display.print(receivedData.latitude, 6);
-    display.setCursor(0, 24);
-    display.print("Lon: ");
-    display.print(receivedData.longitude, 6);
-    display.display();
+    // Calculate the distance and effective distance
+    double distance = calculateDistance(localLatitude, localLongitude, receivedData.latitude, receivedData.longitude);
 
-    // Send acknowledgment back to transmitter
+    // Check if danger condition is met
+    if (distance < 50.0) { // Example danger threshold
+      Serial.println("#######DANGER!!!!#######");
+      digitalWrite(dangerLed, HIGH); // Light up the danger LED
+    } else {
+      digitalWrite(dangerLed, LOW); // Turn off danger LED
+    }
+
+    // Send a default acknowledgment back to the transmitter
     radio.stopListening(); // Switch to transmitter mode
-    const char ack[] = "Data Received";
+    const char ack[] = "Ack: Received";
     bool success = radio.write(&ack, sizeof(ack)); // Send acknowledgment
     if (success) {
-      Serial.println("Ack sent successfully.");
+      Serial.println("Default Ack sent successfully.");
     } else {
-      Serial.println("Failed to send Ack.");
+      Serial.println("Failed to send Default Ack.");
     }
+
     radio.startListening(); // Switch back to receiver mode
+
+    delay(100); // Keep the LED on briefly
+    digitalWrite(msgReceivedLed, LOW); // Turn off message received LED
   }
 
   // Check for new GPS data asynchronously
@@ -140,29 +137,6 @@ void loop() {
 
   // If new data has been received, calculate the distance
   if (receivedNewData) {
-    if (localLatitude != 0.0 && localLongitude != 0.0) {
-      // Calculate distance between local and received GPS coordinates
-      double distance = calculateDistance(localLatitude, localLongitude, receivedData.latitude, receivedData.longitude);
-
-      // Calculate effective distance with error margin
-      double effectiveDistance = calculateEffectiveDistance(distance);
-
-      Serial.print("Distance to Received Location: ");
-      Serial.print(effectiveDistance, 2); // Print effective distance with 2 decimal places
-      Serial.println(" meters");
-
-      // Calculate the braking distance
-      double brakingDistance = pow(localSpeed , 2) / (2 * 0.6 * 9.8); // Speed converted to m/s for calculation
-      Serial.print("Braking Distance: ");
-      Serial.println(brakingDistance, 2);
-
-      if (effectiveDistance < brakingDistance) {
-        Serial.println("#######DANGER!!!!#######");
-      }
-    } else {
-      Serial.println("Waiting for local GPS fix...");
-    }
-
     // Reset the flag
     receivedNewData = false;
   }
