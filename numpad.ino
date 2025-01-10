@@ -30,7 +30,7 @@ TinyGPSPlus gps;
 SoftwareSerial gpsSerial(10, 11); 
 
 
-float vehicleLatitude = 37.7745;  // Initially within 500m
+float vehicleLatitude = 37.7745;  
 float vehicleLongitude = -122.4190;
 float towerLatitude = 37.7750;  
 float towerLongitude = -122.4195;
@@ -44,10 +44,10 @@ struct VehicleData {
 };
 
 VehicleData vehicle = {
-  "Vehicle-001",  // Vehicle ID
-  "",             // Entry time (initially empty)
-  "",             // Messages sent (initially empty)
-  ""              // Exit time (initially empty)
+  "Vehicle-001", 
+  "",             
+  "",         
+  ""           
 };
 
 
@@ -62,11 +62,11 @@ void logExit();
 void handleKeyPress(char key);
 String getCurrentTime();
 void printCSV();
-unsigned long getGPSTime();  // GPS time extraction function
+unsigned long getGPSTime();  
 
 void setup() {
   Serial.begin(9600);
-  gpsSerial.begin(9600); // Initialize GPS UART
+  gpsSerial.begin(9600); 
 
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -86,14 +86,14 @@ void setup() {
   Serial.println("Vehicle Details,Entry Time,Messages Sent,Exit Time");
 
 
-  setSyncProvider(getGPSTime); // Use custom function to provide GPS time
+  setSyncProvider(getGPSTime); 
 
   if (isWithinRadius()) {
     isVehicleInRadius = true;
     logEntry();
   }
 
-  startTime = millis(); // Start time for simulation
+  startTime = millis(); 
 }
 
 void loop() {
@@ -104,7 +104,7 @@ void loop() {
 
 
   if (millis() - startTime >= 60000) {
-    vehicleLatitude = 37.7690;  // Move out of range
+    vehicleLatitude = 37.7690;  
     vehicleLongitude = -122.4194;
   }
 
@@ -134,7 +134,7 @@ bool isWithinRadius() {
 }
 
 float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
-  const float R = 6371000; // Earth radius in meters
+  const float R = 6371000; 
   float phi1 = lat1 * (M_PI / 180.0);
   float phi2 = lat2 * (M_PI / 180.0);
   float deltaPhi = (lat2 - lat1) * (M_PI / 180.0);
@@ -148,8 +148,8 @@ float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
 
 void logEntry() {
   vehicle.entryTime = getCurrentTime();
-  vehicle.messagesSent = "None"; // Reset messages
-  vehicle.exitTime = "N/A"; // Reset exit time
+  vehicle.messagesSent = "None"; 
+  vehicle.exitTime = "N/A"; 
 
 
   printCSV();
